@@ -1,0 +1,5 @@
+{
+  "name": "Labyrinth of Words",
+  "description": "Navigate a procedurally generated maze to collect letters and form words. Powered by Gemini for dynamic word generation.",
+  "requestFramePermissions": []
+}
