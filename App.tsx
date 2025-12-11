@@ -3,7 +3,7 @@ import { GameState, MazeGrid, Position, LetterItem, WordData, Language, Inventor
 import { generateMaze, findFreePositions, getNextStepTowards } from './services/mazeService';
 import { fetchWordForLevel } from './services/geminiService';
 import MazeRender from './components/MazeRender';
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RefreshCw, Trophy, BrainCircuit, Skull, Globe, Star, Shield, Sword, Crosshair, ShoppingCart, Drill } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RefreshCw, Trophy, BrainCircuit, Skull, Globe, Star, Shield, Sword, Crosshair, ShoppingCart, Drill, FastForward } from 'lucide-react';
 
 // Translations
 const UI_TEXT = {
@@ -18,6 +18,7 @@ const UI_TEXT = {
     complete: "Level Complete!",
     found: "Word found:",
     next: "Next Level",
+    skip: "Skip Shop",
     caught: "Caught by the enemy! Restarting level...",
     controls: "Move: Arrow Keys | Shoot: Spacebar",
     restart: "Restart Game",
@@ -49,6 +50,7 @@ const UI_TEXT = {
     complete: "Nível Completo!",
     found: "Palavra encontrada:",
     next: "Próximo Nível",
+    skip: "Pular Loja",
     caught: "Pego pelo inimigo! Reiniciando nível...",
     controls: "Mover: Setas | Atirar: Espaço",
     restart: "Reiniciar Jogo",
@@ -129,9 +131,10 @@ const App: React.FC = () => {
       setWordHint(wordData.hint);
 
       // 2. Generate Maze
-      const baseSize = 15;
+      // INCREASED SIZE LOGIC
+      const baseSize = 21; // Increased from 15
       const sizeIncrement = Math.floor((currentLevel - 1) / 2) * 2;
-      const size = Math.min(baseSize + sizeIncrement, 25); 
+      const size = Math.min(baseSize + sizeIncrement, 35); // Increased max from 25 to 35
       
       const newMaze = generateMaze(size, size);
       setMaze(newMaze);
@@ -402,6 +405,19 @@ const App: React.FC = () => {
     };
   }, [gameState, handleMove, firePistol]);
 
+  // Mobile Control Handlers
+  const handlePadStart = (key: string, dx: number, dy: number) => {
+    if (gameState !== GameState.PLAYING) return;
+    keysPressed.current.add(key);
+    // Instant move for responsiveness
+    handleMove(dx, dy);
+    if (navigator.vibrate) navigator.vibrate(50);
+  };
+
+  const handlePadEnd = (key: string) => {
+    keysPressed.current.delete(key);
+  };
+
   const nextLevel = () => {
     setLevel(p => {
       const next = p + 1;
@@ -524,6 +540,15 @@ const App: React.FC = () => {
         </div>
 
         {/* SHOP UI */}
+        <div className="w-full max-w-lg flex justify-end mb-2">
+            <button 
+              onClick={nextLevel} 
+              className="text-sm text-slate-400 hover:text-white flex items-center gap-1 transition group"
+            >
+              {t.skip} <FastForward size={14} className="group-hover:translate-x-1 transition-transform"/>
+            </button>
+        </div>
+
         <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 w-full max-w-lg mb-8 max-h-[60vh] overflow-y-auto">
           <div className="flex items-center justify-center gap-2 mb-4 text-cyan-300">
             <ShoppingCart />
@@ -620,7 +645,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center p-4">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center p-4 pb-44">
       
       {/* HUD */}
       <div className="w-full max-w-2xl flex justify-between items-center mb-4 px-2">
@@ -672,54 +697,83 @@ const App: React.FC = () => {
         hasShield={inventory.shields > 0} 
       />
 
-      {/* Mobile Controls */}
-      <div className="mt-8 flex gap-8 items-center sm:hidden w-full max-w-md justify-center">
-         {/* D-PAD */}
-        <div className="grid grid-cols-3 gap-2">
+      {/* Mobile Controls Overlay */}
+      <div className="fixed bottom-4 left-0 right-0 z-50 flex items-end justify-between px-6 pb-2 md:hidden pointer-events-none select-none">
+         {/* D-PAD - Left Side */}
+        <div className="grid grid-cols-3 grid-rows-3 gap-1 w-36 h-36 pointer-events-auto bg-slate-900/50 p-2 rounded-full backdrop-blur-sm shadow-xl border border-slate-700/50">
+            {/* Row 1 */}
             <div />
             <button 
-            className="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center active:bg-cyan-700 active:scale-95 transition"
-            onTouchStart={(e) => { e.preventDefault(); keysPressed.current.add('ArrowUp'); }}
-            onTouchEnd={(e) => { e.preventDefault(); keysPressed.current.delete('ArrowUp'); }}
+              className="w-full h-full bg-slate-700/80 border border-slate-500 rounded-t-xl active:bg-cyan-600 active:scale-95 transition flex items-center justify-center shadow-lg"
+              onMouseDown={(e) => { e.preventDefault(); handlePadStart('ArrowUp', 0, -1); }}
+              onMouseUp={(e) => { e.preventDefault(); handlePadEnd('ArrowUp'); }}
+              onMouseLeave={(e) => { e.preventDefault(); handlePadEnd('ArrowUp'); }}
+              onTouchStart={(e) => { e.preventDefault(); handlePadStart('ArrowUp', 0, -1); }}
+              onTouchEnd={(e) => { e.preventDefault(); handlePadEnd('ArrowUp'); }}
+              onTouchCancel={(e) => { e.preventDefault(); handlePadEnd('ArrowUp'); }}
             >
-            <ArrowUp />
+              <ArrowUp size={28} className="text-cyan-50" />
             </button>
             <div />
             
+            {/* Row 2 */}
             <button 
-            className="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center active:bg-cyan-700 active:scale-95 transition"
-            onTouchStart={(e) => { e.preventDefault(); keysPressed.current.add('ArrowLeft'); }}
-            onTouchEnd={(e) => { e.preventDefault(); keysPressed.current.delete('ArrowLeft'); }}
+              className="w-full h-full bg-slate-700/80 border border-slate-500 rounded-l-xl active:bg-cyan-600 active:scale-95 transition flex items-center justify-center shadow-lg"
+              onMouseDown={(e) => { e.preventDefault(); handlePadStart('ArrowLeft', -1, 0); }}
+              onMouseUp={(e) => { e.preventDefault(); handlePadEnd('ArrowLeft'); }}
+              onMouseLeave={(e) => { e.preventDefault(); handlePadEnd('ArrowLeft'); }}
+              onTouchStart={(e) => { e.preventDefault(); handlePadStart('ArrowLeft', -1, 0); }}
+              onTouchEnd={(e) => { e.preventDefault(); handlePadEnd('ArrowLeft'); }}
+              onTouchCancel={(e) => { e.preventDefault(); handlePadEnd('ArrowLeft'); }}
             >
-            <ArrowLeft />
+              <ArrowLeft size={28} className="text-cyan-50" />
             </button>
-            <button 
-            className="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center active:bg-cyan-700 active:scale-95 transition"
-            onTouchStart={(e) => { e.preventDefault(); keysPressed.current.add('ArrowDown'); }}
-            onTouchEnd={(e) => { e.preventDefault(); keysPressed.current.delete('ArrowDown'); }}
-            >
-            <ArrowDown />
-            </button>
-            <button 
-            className="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center active:bg-cyan-700 active:scale-95 transition"
-            onTouchStart={(e) => { e.preventDefault(); keysPressed.current.add('ArrowRight'); }}
-            onTouchEnd={(e) => { e.preventDefault(); keysPressed.current.delete('ArrowRight'); }}
-            >
-            <ArrowRight />
-            </button>
-        </div>
+            
+            {/* Center Decorative */}
+            <div className="flex items-center justify-center">
+              <div className="w-4 h-4 rounded-full bg-slate-600/50"></div>
+            </div>
 
-        {/* Shoot Button (Mobile) */}
+            <button 
+              className="w-full h-full bg-slate-700/80 border border-slate-500 rounded-r-xl active:bg-cyan-600 active:scale-95 transition flex items-center justify-center shadow-lg"
+              onMouseDown={(e) => { e.preventDefault(); handlePadStart('ArrowRight', 1, 0); }}
+              onMouseUp={(e) => { e.preventDefault(); handlePadEnd('ArrowRight'); }}
+              onMouseLeave={(e) => { e.preventDefault(); handlePadEnd('ArrowRight'); }}
+              onTouchStart={(e) => { e.preventDefault(); handlePadStart('ArrowRight', 1, 0); }}
+              onTouchEnd={(e) => { e.preventDefault(); handlePadEnd('ArrowRight'); }}
+              onTouchCancel={(e) => { e.preventDefault(); handlePadEnd('ArrowRight'); }}
+            >
+              <ArrowRight size={28} className="text-cyan-50" />
+            </button>
+
+            {/* Row 3 */}
+            <div />
+            <button 
+              className="w-full h-full bg-slate-700/80 border border-slate-500 rounded-b-xl active:bg-cyan-600 active:scale-95 transition flex items-center justify-center shadow-lg"
+              onMouseDown={(e) => { e.preventDefault(); handlePadStart('ArrowDown', 0, 1); }}
+              onMouseUp={(e) => { e.preventDefault(); handlePadEnd('ArrowDown'); }}
+              onMouseLeave={(e) => { e.preventDefault(); handlePadEnd('ArrowDown'); }}
+              onTouchStart={(e) => { e.preventDefault(); handlePadStart('ArrowDown', 0, 1); }}
+              onTouchEnd={(e) => { e.preventDefault(); handlePadEnd('ArrowDown'); }}
+              onTouchCancel={(e) => { e.preventDefault(); handlePadEnd('ArrowDown'); }}
+            >
+              <ArrowDown size={28} className="text-cyan-50" />
+            </button>
+            <div />
+        </div>
+        
+        {/* Shoot Button - Right Side */}
         <button 
-            className={`w-20 h-20 rounded-full flex flex-col items-center justify-center border-4 shadow-xl transition active:scale-95 ${inventory.pistols > 0 ? 'bg-pink-900 border-pink-700 text-pink-300' : 'bg-slate-800 border-slate-700 text-slate-600'}`}
-            onClick={firePistol}
+            className={`w-24 h-24 mb-4 rounded-full flex flex-col items-center justify-center border-4 shadow-2xl transition active:scale-95 pointer-events-auto backdrop-blur-sm ${inventory.pistols > 0 ? 'bg-pink-900/90 border-pink-500 text-pink-100 shadow-pink-900/50' : 'bg-slate-800/90 border-slate-600 text-slate-400'}`}
+            onMouseDown={(e) => { e.preventDefault(); firePistol(); }}
+            onTouchStart={(e) => { e.preventDefault(); firePistol(); }}
         >
-            <Crosshair size={32} />
-            <span className="text-[10px] font-bold mt-1">SHOOT</span>
+            <Crosshair size={36} />
+            <span className="text-[10px] font-bold mt-1 tracking-widest">FIRE</span>
         </button>
       </div>
       
-      <div className="hidden sm:block mt-6 text-slate-600 text-sm">
+      <div className="hidden md:block mt-6 text-slate-600 text-sm">
         {t.controls}
       </div>
     </div>

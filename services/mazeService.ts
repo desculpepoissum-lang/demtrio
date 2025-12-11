@@ -32,6 +32,29 @@ export const generateMaze = (width: number, height: number): MazeGrid => {
   maze[1][1] = 'path';
   carver(1, 1);
 
+  // POST-PROCESSING: Add loops to create alternative paths
+  // Iterate through internal walls and randomly remove some to create cycles
+  for (let y = 1; y < rows - 1; y++) {
+    for (let x = 1; x < cols - 1; x++) {
+      if (maze[y][x] === 'wall') {
+        // Check if removing this wall connects two existing paths
+        const top = maze[y - 1]?.[x] === 'path';
+        const bottom = maze[y + 1]?.[x] === 'path';
+        const left = maze[y]?.[x - 1] === 'path';
+        const right = maze[y]?.[x + 1] === 'path';
+
+        // If it separates paths vertically OR horizontally
+        if ((top && bottom) || (left && right)) {
+           // 20% chance to remove wall, creating a loop/shortcut
+           // This high percentage ensures multiple paths to most locations
+           if (Math.random() < 0.20) {
+             maze[y][x] = 'path';
+           }
+        }
+      }
+    }
+  }
+
   return maze;
 };
 
@@ -65,7 +88,7 @@ export const getNextStepTowards = (
   const highCostSet = new Set(highCostPositions.map(p => `${p.x},${p.y}`));
 
   // Priority Queue structure: { pos, cost, firstStep }
-  // We'll use a simple array and sort it because the grid is small (max 25x25)
+  // We'll use a simple array and sort it because the grid is small (max 35x35)
   const pq: { pos: Position; cost: number; firstStep: Position | null }[] = [
     { pos: start, cost: 0, firstStep: null }
   ];

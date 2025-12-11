@@ -14,14 +14,15 @@ const MazeRender: React.FC<MazeRenderProps> = ({ maze, playerPos, letters, enemy
   const height = maze.length;
   const width = maze[0].length;
 
-  // Calculate cell size based on viewport to fit the maze
-  const cellSizeClass = width > 20 ? 'w-5 h-5' : 'w-7 h-7 sm:w-8 sm:h-8';
+  // Calculate cell size based on maze size to maintain usability
+  // Smaller cells for huge mazes
+  const cellSizeClass = width > 28 ? 'w-4 h-4' : (width > 20 ? 'w-5 h-5' : 'w-7 h-7 sm:w-8 sm:h-8');
 
   return (
-    <div className="relative p-1 bg-slate-800 rounded-lg shadow-2xl overflow-hidden border-4 border-slate-700">
+    <div className="relative p-1 bg-slate-800 rounded-lg shadow-2xl border-4 border-slate-700 max-w-full overflow-x-auto">
       {/* Grid Container */}
       <div 
-        className="relative bg-slate-900"
+        className="relative bg-slate-900 mx-auto"
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${width}, min-content)`,
